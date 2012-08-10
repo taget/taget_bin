@@ -51,7 +51,8 @@ pthread_mutex_t mnt;
 
 typedef struct _SERVER_INFO
 {
-	string                          ip;
+	string                          host;
+	string				path;	
 	int   			        port;
 	int 				num;
 }SERVER_INFO;
@@ -212,10 +213,49 @@ int writeSpecifiedData(int iFd, unsigned char lpszLineBuffer[], int iNum)
 	return iTotalBytes;
 }
 
-string getfilename(string path)
+// findstr("http://xyz//abc", "://", "//", str) will return xyz
+int findstr(const string basestr, const string strstart, const string strend, string& str)
+{
+	size_t pos_start, pos_end;
+	int len_start = strstart.length();
+	if((pos_start = basestr.find(strstart)) != string::npos)
+	{
+		if(strend.length() == 0)
+		{
+			pos_end = basestr.length();
+		}
+		else if((pos_end = basestr.find(strend, pos_start + len_start)) != string ::npos)
+		{
+			
+		}
+		else
+			return 1;
+		str = basestr.substr(pos_start + len_start, pos_end - pos_start - len_start);
+		return 0;
+	}
+	else 
+		return 1;
+	
+	
+}
+
+int parsurl(const string url, string& host, string& path)
+{
+/* http://sp1.yokacdn.com/photos/0c/c3/673154/photo_117482_500.jpg */
+/* return sp1.yokacdn.com */
+	int ret;
+	ret = findstr(url, "://", "/", host);
+	ret = findstr(url, "com/", "", path);
+	path = "/" + path;
+	return ret;
+		
+}
+
+int getfilename(const string path, string& filename)
 {
 // for /photos/0c/c3/673154/photo_117482_500.jpg return photo_117482_500.jpg 
-	return path.substr(path.find_last_of('/') + 1, path.length());
+	filename = path.substr(path.find_last_of('/') + 1, path.length());
+	return 0;
 }
 
 int add_val(const string name, const string val, string& ret)
@@ -370,7 +410,8 @@ static void* client_thread(void* server_info)
 	DEBUG(str_httphead);
 	DEBUG(sock);
 	writetoserver(sock, str_httphead);
-	string filename = getfilename(path);
+	string filename ;
+	getfilename(path,filename);
 	cout<< "reading ... and save download to "<< filename <<endl;
 	readfromserver(sock, filename);
 	
@@ -387,6 +428,12 @@ int main(int argc,char **argv)
 	pthread_t pt[16];	
         int ithreadnum = 1;
 	SERVER_INFO server_info;
+	string url = string("http://sp1.yokacdn.com/photos/0c/c3/673154/photo_117482_500.jpg");
+	string host;
+	string path;
+	parsurl(url, host, path);
+	DEBUG(host);
+	DEBUG(path);
 	for (int i=0; i<ithreadnum ;i++)
 	{
 		pid = pthread_create(&pt[i], NULL, client_thread ,&server_info);
