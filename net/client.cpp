@@ -325,7 +325,8 @@ int readfromserver(int fd, string path)
                 return 2;	
 	int len2read = atoi(len.c_str());
 	FILE* fp = fopen (path.c_str(), "w");
-	while((ret = readSpecifiedData(fd, buffer, SOCK_MSG_LEN)) > 0 && len2read > 0)
+	while((ret = readSpecifiedData(fd, buffer, len2read > SOCK_MSG_LEN ? SOCK_MSG_LEN : len2read)) > 0 \
+             && len2read > 0)
 	{		
 		DEBUG(ret);
 		len2read -= ret;
