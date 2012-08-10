@@ -215,7 +215,7 @@ int writeSpecifiedData(int iFd, unsigned char lpszLineBuffer[], int iNum)
 string getfilename(string path)
 {
 // for /photos/0c/c3/673154/photo_117482_500.jpg return photo_117482_500.jpg 
-	return path.substr(path.find_last_of('\/') + 1, path.length());
+	return path.substr(path.find_last_of('/') + 1, path.length());
 }
 
 int add_val(const string name, const string val, string& ret)
@@ -242,6 +242,53 @@ int savetofile(FILE* fp, const u_char* buffer, int size)
 	return fwrite(buffer,size,1024,fp);
 }
 
+int readheadfromserver2(int fd, string& head)
+{
+	u_char buffer = 0;
+	int ret;
+	int ifind = 0;
+	
+	while((ret = readSpecifiedData(fd, &buffer, 1)) != 0)
+	{
+		head += buffer;
+		switch(ifind)
+		{
+			case 0:
+				if (buffer == '\r')
+				{
+					ifind ++;
+				}
+				break;
+			case 1:
+				if (buffer == '\n')
+				{
+					ifind ++;
+				}
+				else
+				{
+					ifind = 0;
+				}
+				break;
+			case 2:
+				if (buffer == '\r')
+				{
+					ifind ++;
+				}
+				else
+				{
+					ifind = 0;
+				}
+				break;
+			case 3:
+				cout << "find http head!"<<endl;
+				return 0;
+		}
+		
+	}
+	return 0;
+}
+
+/*
 int readheadfromserver(int fd, string& head, unsigned char* left)
 {
 	// return left byte after read head.
@@ -261,6 +308,7 @@ int readheadfromserver(int fd, string& head, unsigned char* left)
 	memcpy(left, &buffer[head.length() + 4], nret);
 	return nret;
 }
+*/
 int readfromserver(int fd, string path)
 {
 // read from server , then save to path
@@ -269,14 +317,14 @@ int readfromserver(int fd, string path)
         string rethead = "";
 	string len = "0";
 	int ret;
-        int leftn = readheadfromserver(fd, rethead, leftbuf);
+	readheadfromserver2(fd, rethead);
+	DEBUG(rethead);
 	if(rethead.find("OK") == string::npos)
 		return 1;
         if(get_val(rethead, "Content-Length", len) !=0)
                 return 2;	
-	int len2read = atoi(len.c_str()) - leftn;
+	int len2read = atoi(len.c_str());
 	FILE* fp = fopen (path.c_str(), "w");
-	fwrite(leftbuf,leftn,1,fp);
 	while((ret = readSpecifiedData(fd, buffer, SOCK_MSG_LEN)) > 0 && len2read > 0)
 	{		
 		DEBUG(ret);
@@ -286,14 +334,14 @@ int readfromserver(int fd, string path)
 	}
 	if (len2read != 0)
 		cout <<"read error!"<<endl;
-	close(fp);
+	fclose(fp);
 	return 0;
 		
 }
 int writetoserver(int fd, string str)
 {
 	u_char buff[SOCK_MSG_LEN];
-	strcpy(buff ,str.c_str());
+	memcpy(buff ,str.c_str(), str.length());
 	DEBUG(buff);
 	return writeSpecifiedData(fd, buff , str.length());
 		
@@ -312,9 +360,9 @@ string wapperhead(string path, string servername,int nport)
 }
 static void* client_thread(void* server_info) 
 {
-	char *servername = "sp1.yokacdn.com";
+	const char *servername = "sp1.yokacdn.com";
 	int port = 80;
-	char *path = "/photos/0c/c3/673154/photo_117482_500.jpg";
+	const char *path = "/photos/0c/c3/673154/photo_117482_500.jpg";
 	int sock = SocketCLient(servername, port);
 	int ret = 0;
 	string str_httphead = wapperhead(path, servername, port);
