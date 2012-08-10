@@ -1,0 +1,492 @@
+#include <ctype.h>
+#include <time.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/ipc.h>
+#include <stdio.h>
+#include <errno.h>
+#include <sys/msg.h>
+#include <string.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <assert.h>
+#include <string>
+#include <iostream>
+#include <iomanip>
+#include <pthread.h>
+#include <sstream>
+#include <fstream>
+#include <vector>
+using namespace std;
+
+pthread_mutex_t mut;
+#define SOCK_MSG_LEN    4096
+
+//a saft exit signal flag
+static int      s_iAlarmFlag = 0;
+static int 		s_maxnum     = 0;
+const  int      MAXNUM       = 128;
+
+vector<string> vecCmds;
+
+int maxnum = 128;
+
+pthread_mutex_t mnt;
+//a saft exit signal flag
+
+typedef struct _SERVER_INFO
+{
+	string                          ip;
+	int   			        port;
+	int 					num;
+}SERVER_INFO;
+
+void* client_thread(void* server_info);
+
+void callSigInt(int iSig)
+{
+	s_iAlarmFlag = 1;
+}
+int setNonblockMode(int iFd)
+{
+	int iRet;
+
+	if((iRet = fcntl(iFd, F_GETFL, 0)) < 0)
+	{
+		return -1;
+	}
+	if((fcntl(iFd, F_SETFL, iRet | O_NONBLOCK)) < 0)
+	{
+		return -1;
+	}
+	return 0;
+}
+int SocketServer(short nPort)
+{
+	int sock;
+	struct sockaddr_in addr;
+	int opt = 1;
+	sock = socket(AF_INET,SOCK_STREAM,0);
+	if(sock < 0)
+	{
+		return -1;
+	}
+	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+	setNonblockMode(sock);	
+	
+	memset(&addr,0,sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	addr.sin_port = htons(nPort);
+	
+	if(bind(sock,(struct sockaddr *)&addr,sizeof(addr)) < 0)
+	{
+		return -2;
+	}
+	
+	if(listen(sock,20) < 0)
+	{
+		return -3;
+	}
+	
+	return sock;
+}
+
+int SocketClient(const char* ch_ip, int nPort)
+{
+	int sock, n;
+	struct sockaddr_in addr;
+	struct in_addr s;
+	sock = socket(AF_INET, SOCK_STREAM,0);
+	if(sock < 0)
+	{
+		return -1;
+	}
+
+	//setNonblockMode(sock);	
+	memset(&addr, 0, sizeof(addr));
+	inet_pton(AF_INET, ch_ip,&s);
+	addr.sin_family = AF_INET;
+	addr.sin_addr = s;
+	addr.sin_port = htons(nPort);
+	
+	n = connect(sock, (struct sockaddr*)&addr ,sizeof(addr));
+	if(-1 == n)
+		return -1;
+	return sock;
+       
+}
+
+
+int readSpecifiedData(int iFd, unsigned char lpszLineBuffer[], int iNum)
+{
+	int iBytes=0, iTotalBytes=0;
+
+	if (iFd < 0)
+		return -1;
+	assert(lpszLineBuffer != NULL);	
+	while(iTotalBytes<iNum)
+	{
+		iBytes = read(iFd, lpszLineBuffer+iTotalBytes, iNum-iTotalBytes);
+		if(iBytes < 0)
+		{
+			if((errno == EAGAIN) || (errno == EINTR))
+				continue;
+			return -1;
+		}
+		else if(iBytes > 0)
+			iTotalBytes += iBytes;
+		else
+			break;
+	}
+	return iTotalBytes;
+}
+
+int writeSpecifiedData(int iFd, unsigned char lpszLineBuffer[], int iNum)
+{
+	int iBytes=0, iTotalBytes=0;
+
+	if (iFd < 0)
+		return -1;
+	assert(lpszLineBuffer != NULL);
+	while(iTotalBytes<iNum)
+	{
+		iBytes = write(iFd, lpszLineBuffer+iTotalBytes, iNum-iTotalBytes);
+		if(iBytes < 0)
+		{
+			if((errno == EAGAIN) || (errno == EINTR))
+				continue;
+			cout<<"write socket failed"<<endl;
+			return -1;
+		}
+		else if(iBytes > 0)
+			iTotalBytes += iBytes;
+		else
+			break;
+	}
+	return iTotalBytes;
+}
+int ProcessMessage(u_char* buffer)
+{
+
+	return 1;	
+}	
+string readfromserver(int fd)
+{
+	u_char buffer[SOCK_MSG_LEN];
+	memset(buffer,0,SOCK_MSG_LEN);
+	if(0 == readSpecifiedData(fd, buffer, 12))
+	{
+		cout<<"连接错误"<<endl;
+		return string("");
+	}
+	string strRecv((const char*)buffer);
+	string strLen = strRecv.substr(8,4);
+	int len = atoi(strLen.c_str());
+	int len2read = len-12;
+	memset(buffer,0,SOCK_MSG_LEN);
+	readSpecifiedData(fd, buffer, len2read);
+	return string(strRecv + (const char*)buffer);
+		
+}
+int writetoserver(int fd, string str)
+{
+	u_char buff[SOCK_MSG_LEN];
+	memcpy(buff , str.c_str(), str.length());
+	cout<<buff<<endl;
+	return writeSpecifiedData(fd, buff , str.length());
+		
+}
+string getlen(int len)
+{
+	char temp[5] ;	
+	if(len < 10)
+	{
+		sprintf(temp,"000%d",len);
+		//return string(temp); 
+	}
+	else if(len < 100)
+	{
+		sprintf(temp,"00%d",len);
+	}
+	else if(len <1000)
+	{
+		sprintf(temp,"0%d",len);
+	}
+	else 
+		sprintf(temp,"%d",len);
+	return string(temp); 
+	return string("0000");
+}
+string packageMsg(const string& s)
+{
+	string temp = "`SF`1.00";
+	int len = s.length() + 20;
+	temp += getlen(len);
+	temp += "INFO";
+	temp += s;
+	temp += "`EF`";
+	return temp;
+
+}
+void* client_thread(void* server_info) 
+{
+	string strloginfo = vecCmds[0];
+	string strsend = vecCmds[1];
+	
+	ostringstream osss;
+	osss<<"oslog."<<pthread_self();
+	ofstream ofs(osss.str().c_str());
+	if(!ofs)
+	{
+		return NULL;
+	}
+	int iport;
+	string strip;
+	iport = ((SERVER_INFO*)(server_info))->port;
+	strip = ((SERVER_INFO*)(server_info))->ip;
+	int num  = ((SERVER_INFO*)(server_info))->num;
+	int sock ;
+	lable: sock = SocketClient(strip.c_str(), iport);
+	if(sock < 0)
+	{
+		cout<<"can not open a client!"<<endl;
+		return NULL;
+		
+	}
+	bool iflgin = false;
+	int ret;
+	u_char*  buffer = new u_char[1024];
+	int ii = 0;
+	int jj = 1;
+	while(1)
+	{
+		if(ii++ > num) break;
+		
+        if(false == iflgin)
+        {
+        	// 发送登录
+			if(writetoserver(sock,strloginfo) >0)
+            {	
+       			cout<<sock<<":"<<strloginfo<<endl;
+				cout<<"pid = "<<pthread_self()<<" :send LOIN ok !"<<endl;
+				
+				string strrecv  = readfromserver(sock);
+				if(strrecv.length() > 0 )
+				{
+					
+					cout<<"pid = "<<pthread_self()<<" recv : "<<strrecv<<endl;
+					
+					iflgin = true;
+					ofs<<"INFO:登录成功"<<endl;
+					//cout<<"pid = "<<pthread_self()<<" 登录成功，发送几条？"<<endl;
+					//cin>>num;
+					//ii = 0;
+				}
+				else
+				{
+					close(sock);
+				//	cout<<"pid = "<<pthread_self()<<" : 登录失败"<<endl;
+					iflgin = false;
+					ofs<<"ERROR:登录失败，尝试重新登录"<<endl;
+					sleep(1);
+					
+					goto  lable;
+					//continue;
+					//return NULL;
+				}		
+				  
+            }
+        }
+        
+        else
+        {
+        	// get rand info with time
+			struct  timeval my_tm;
+			struct timezone my_zone;
+			gettimeofday(&my_tm,&my_zone);
+			char ch[20];
+			sprintf(ch, "%4d%06d", my_tm.tv_sec,my_tm.tv_usec);
+			// get rand info with time
+			cout<<ch<<endl;
+			string strinfo = string(ch);
+        	size_t posleft = strsend.find("[",0);
+        	size_t posright = strsend.find("]",posleft);
+        	string strtmp = "";
+        	size_t curr_pos = 0;
+        	while(posleft != string::npos || posright !=string::npos)
+        	{
+        		//string strnum  =  posright - posleft;
+        		int numtoreplace = atoi(strsend.substr(posleft+1, posright - posleft -1).c_str());
+        		
+        		if(numtoreplace > strinfo.length())
+        		{
+        			cout<<"error"<<endl;
+        			throw;
+        		}
+        		
+        		strtmp += strsend.substr(curr_pos, posleft - curr_pos);
+        		strtmp += strinfo.substr(strinfo.length() - numtoreplace ,numtoreplace);
+        		curr_pos = posright + 1;        		
+        		posleft = strsend.find("[",posright);
+        		if(posleft == string::npos)
+        			break;
+        		posright = strsend.find("]",posleft);
+        	}
+			
+			strtmp += strsend.substr(curr_pos , strsend.length() - curr_pos +1 );
+		
+      		cout<<"send ticket!"<<endl;
+            writetoserver(sock,strtmp.c_str());//string((const char*)(buffer))))
+            string strrecv  = readfromserver(sock);
+            if(strrecv.length() > 0)
+			{ 
+				cout<<"pid = "<<pthread_self()<<" :read from server : "<<strrecv<<endl;
+				if(strrecv.find("OK")!=string::npos)
+				{
+					ofs<<jj++<<endl;		
+				}
+				else
+				{
+					ofs<<" JIMMY:没有收到INFOOK"<<endl;
+				}	
+			}
+            else
+            {
+            	cout<<"pid = "<<pthread_self()<<" 错误"<<endl;
+            	iflgin = false;
+				ofs<<" ERROR:接受返回消息错误 ,尝试重新登录"<<endl;
+				continue;
+            }
+        }
+		
+		usleep(0);
+	
+    }
+    if(sock > 0)
+         close(sock);	
+	delete []buffer;
+	ofs<<"INFO:正常关闭"<<endl;
+	ofs.close();
+	return NULL;
+	
+}
+
+string getTicket()
+{
+	struct  timeval my_tm;
+	struct timezone my_zone;
+    gettimeofday(&my_tm,&my_zone);
+    char ch[20];
+    sprintf(ch, "%4d%06d", my_tm.tv_sec,my_tm.tv_usec);
+	cout<<ch<<endl;
+}
+
+int main(int argc,char **argv)
+{
+	signal(SIGPIPE, SIG_IGN);
+	signal(SIGINT,callSigInt);
+	
+	string sip = "133.64.46.198"; //port threadnum ticketnum file
+	string strfile = "file.list";
+	int iport =9999;
+	int ithreadnum;
+	int iticketnum;
+	if (argc  != 6)
+	{
+		cout<<"use [ip] [port] [threadnum] [ticketnum] [tickettemplate]"<<endl;
+		return -1;
+	}
+	sip    = argv[1];
+	iport = atoi(argv[2]);
+	ithreadnum = atoi(argv[3]);
+	iticketnum = atoi(argv[4]);
+	strfile = argv[5];
+
+	
+	cout<<"ip = "<<sip<<"; port = "<<iport<<" ; threadnum = "<<ithreadnum<<" ; iticketnum = "<<iticketnum<<"; tickettemplate = "<<strfile<<endl;
+	
+	SERVER_INFO server_info;
+
+	server_info.port = iport;
+	server_info.ip   = sip;
+	server_info.num = iticketnum;
+	pthread_mutex_init(&mnt, NULL);
+	pthread_t pt[20];
+	pid_t pid;
+	
+	char cmdbuf[10001];
+	ifstream ifs(strfile.c_str());
+	if(!ifs)
+	{
+		cout<<"open strfile failed"<<endl;
+		return -1;
+	}
+	while(!ifs.eof())
+	{
+		ifs.getline(cmdbuf,10000);
+		string tmp(cmdbuf);
+		if(tmp.length() < 2)
+			continue;
+		vecCmds.push_back(tmp);
+	}
+	 cout<<"指令文件读取结束 指令条数 "<<vecCmds.size()<<endl;
+	ifs.close();
+	
+	string strsend = vecCmds[1];
+	string strinfo = "1232131231233121";
+	
+      	size_t posleft = strsend.find("[",0);
+    	size_t posright = strsend.find("]",posleft);
+    	string strtmp = "";
+    	size_t curr_pos = 0;
+    	while(posleft != string::npos || posright !=string::npos)
+    	{
+    		//string strnum  =  posright - posleft;
+    		int numtoreplace = atoi(strsend.substr(posleft+1, posright - posleft -1).c_str());
+    		
+    		if(numtoreplace > strinfo.length())
+    		{
+    			cout<<"error"<<endl;
+    			throw;
+    		}
+    		
+    		strtmp += strsend.substr(curr_pos, posleft - curr_pos);
+    		strtmp += strinfo.substr(strinfo.length() - numtoreplace ,numtoreplace);
+    		curr_pos = posright + 1;        		
+    		posleft = strsend.find("[",posright);
+    		if(posleft == string::npos)
+    			break;
+    		posright = strsend.find("]",posleft);
+    	}
+	
+	strtmp += strsend.substr(curr_pos , strsend.length() - curr_pos +1 );
+	
+	cout<<strtmp<<endl;
+	
+	
+	for (int i=0; i<ithreadnum ;i++)
+	{
+		pid = pthread_create(&pt[i], NULL, client_thread ,&server_info);
+		
+		if(pid !=0 )
+			return 0;
+		else 
+		{
+			cout<<"you have create a new thread pid is "<<pt[i]<<endl;
+		}
+
+	}
+	for(int i=0; i<ithreadnum; i++)
+	{
+		pthread_join(pt[i], NULL);
+	}
+	
+	return 0;
+}
