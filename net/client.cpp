@@ -220,7 +220,7 @@ string getfilename(string path)
 
 int add_val(const string name, const string val, string& ret)
 {
-	ret =  name + ": " + val;
+	ret +=  "\r\n" + name + ": " + val;
 	return 0;
 }
 
@@ -280,12 +280,11 @@ int readheadfromserver2(int fd, string& head)
 				}
 				break;
 			case 3:
-				cout << "find http head!"<<endl;
 				return 0;
 		}
 		
 	}
-	return 0;
+	return 1;
 }
 
 /*
@@ -347,17 +346,18 @@ int writetoserver(int fd, string str)
 	return writeSpecifiedData(fd, buff , str.length());
 		
 }
-string wapperhead(string path, string servername,int nport)
+const string wapperhead(const string path, const string servername, const int nport)
 {
-	ostringstream os;
-	os << "GET " << path <<" HTTP/1.1\r\n";
-	os << "Accept: */*\r\n";
-	os << "Cache-Control: no-cache\r\n";
-	os << "Connection: Keep-Alive\r\n";
-	os << "Host: "<< servername <<":"<< nport <<"\r\n";
-	os << "Pragma: no-cache\r\n";
-	os << "User-Agent: GeneralDownloadApplication\r\n\r\n";
-	return os.str();	
+	string strhead;
+	strhead = "GET " + path + " HTTP/1.1";
+	
+	add_val("Accept", "*/*", strhead);
+	add_val("Connection", "Keep-Alive", strhead);
+	add_val("Host", servername, strhead);
+	add_val("Pragma"," no-cache", strhead);
+	add_val("User-Agent", "GeneralDownloadApplication", strhead);
+	strhead += "\r\n\r\n";
+	return strhead;
 }
 static void* client_thread(void* server_info) 
 {
