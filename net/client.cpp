@@ -237,7 +237,7 @@ int get_val(const string header,const string name, string& val)
 	return 1;
 }
 
-int savetofile(FILE* fp, const u_char buffer*, int size)
+int savetofile(FILE* fp, const u_char* buffer, int size)
 {
 	return fwrite(buffer,size,1024,fp);
 }
