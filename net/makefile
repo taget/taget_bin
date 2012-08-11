@@ -1,9 +1,13 @@
 APP_NAME=CLIENT
 
-SOURCE_FILE=client.cpp
+OBJS=strutil.o client.o
+SRC=.
 
-$(APP_NAME) : $(SOURCE_FILE)
-	g++ -g -Wno-deprecated -fpermissive  $(SOURCE_FILE) -o $(APP_NAME) -lpthread
+$(APP_NAME) : $(OBJS)
+	g++ -g -Wno-deprecated -fpermissive  $(OBJS) -o $(APP_NAME) -lpthread
+$(SRC)/%.o : $(SRC)/%.cpp
+	g++ -g -Wno-deprecated -fpermissive -c $^
 
 clean:
-	rm -rf ${APP_NAME}
+	rm -rf $(APP_NAME)
+	rm -rf ./*.o
