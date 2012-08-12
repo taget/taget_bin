@@ -4,7 +4,7 @@ using namespace std;
 
 static int findstr(const string basestr, const string strstart, const string strend, string& str);
 
-static int parsurl(const string url, string& host, string& path);
+static int parsurl(const string url, string& host, string& path, int& port);
 
 static int getfilename(const string path, string& filename);
 

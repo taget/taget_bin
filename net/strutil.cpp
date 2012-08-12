@@ -26,14 +26,27 @@ static int findstr(const string basestr, const string strstart, const string str
 	
 }
 
-static int parsurl(const string url, string& host, string& path)
+static int parsurl(const string url, string& host, string& path, int& port)
 {
 /* http://sp1.yokacdn.com/photos/0c/c3/673154/photo_117482_500.jpg */
 /* return sp1.yokacdn.com */
 	int ret;
+	string tmp;
 	ret = findstr(url, "://", "/", host);
-	ret = findstr(url, "com/", "", path);
-	path = "/" + path;
+	ret = findstr(url, host, "", path);
+	if(0 == findstr(host, "net:","", tmp))
+	{
+		host = host.substr(0, host.length() - tmp.length() - 1);
+		port = atoi(tmp.c_str());
+	}
+	else 
+	{
+		if(0 == findstr(url, "htt", "://", tmp))
+			port = 80;
+		else if(0 == findstr(url, "ftp://", "/",tmp))
+			port = 21;
+	}
+	
 	return ret;
 		
 }

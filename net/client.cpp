@@ -117,16 +117,19 @@ int SocketCLient(const char* ch_server, int nPort)
 {
         int sock, n;
         struct sockaddr_in addr;
-	struct hostent *phent;
+	struct hostent *phent = NULL;
         //sock = socket(AF_INET, SOCK_STREAM,0);
 	sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
         if(sock < 0)
         {
+		cout<<"Open socket error!"<<endl;
                 return -1;
         }
 	
 	phent = gethostbyname(ch_server);
-  
+	if(phent == NULL)
+		return -1; 
+	  
 	memset(&addr, 0, sizeof(addr));
         addr.sin_addr.s_addr = *((unsigned long *)phent->h_addr);
 	addr.sin_family = AF_INET;
@@ -134,7 +137,10 @@ int SocketCLient(const char* ch_server, int nPort)
         
         n = connect(sock, (struct sockaddr*)&addr ,sizeof(addr));
         if(-1 == n)
+	{
+		cout<< "connect error!"<<endl;
                 return -1;
+	}
         return sock;
 
 }
@@ -297,7 +303,10 @@ int readfromserver(int fd, string path)
 	readheadfromserver2(fd, rethead);
 	DEBUG(rethead);
 	if(rethead.find("OK") == string::npos)
+	{	
+		cout<< "Server refused" <<endl;
 		return 1;
+	}
         if(get_val(rethead, "Content-Length", len) !=0)
                 return 2;	
 	int len2read = atoi(len.c_str());
@@ -339,17 +348,22 @@ const string wapperhead(const string path, const string servername, const int np
 }
 static void* client_thread(void* server_info) 
 {
-	const char *servername = "sp1.yokacdn.com";
-	int port = 80;
-	const char *path = "/photos/0c/c3/673154/photo_117482_500.jpg";
-	int sock = SocketCLient(servername, port);
+	string host = ((SERVER_INFO*)(server_info))->host;
+	string path = ((SERVER_INFO*)(server_info))->path;
+	int port = ((SERVER_INFO*)(server_info))->port;
+	string filename;
+	int sock = SocketCLient(host.c_str(), port);
+	if(sock < 0)
+	{
+		cout << "Open socket error!"<<endl;
+		return NULL;
+	}	
 	int ret = 0;
-	string str_httphead = wapperhead(path, servername, port);
+	string str_httphead = wapperhead(path, host, port);
 	DEBUG(str_httphead);
 	DEBUG(sock);
 	writetoserver(sock, str_httphead);
-	string filename ;
-	getfilename(path,filename);
+	getfilename(path, filename);
 	cout<< "reading ... and save download to "<< filename <<endl;
 	readfromserver(sock, filename);
 	
@@ -367,11 +381,23 @@ int main(int argc,char **argv)
         int ithreadnum = 1;
 	SERVER_INFO server_info;
 	string url = string("http://sp1.yokacdn.com/photos/0c/c3/673154/photo_117482_500.jpg");
+	DEBUG(argc);
+	if(argc == 2)
+	{
+		url = string(argv[1]);
+	}
+	DEBUG(url);
 	string host;
 	string path;
-	parsurl(url, host, path);
+	int port;
+	parsurl(url, host, path, port);
 	DEBUG(host);
 	DEBUG(path);
+	DEBUG(port);
+	server_info.host = host;
+	server_info.path = path;
+	server_info.port = port;
+	server_info.num = 1;
 	for (int i=0; i<ithreadnum ;i++)
 	{
 		pid = pthread_create(&pt[i], NULL, client_thread ,&server_info);
