@@ -1,6 +1,6 @@
 APP_NAME=CLIENT
 
-OBJS=strutil.o client.o
+OBJS=strutil.o protocol.o http.o client.o 
 SRC=.
 
 $(APP_NAME) : $(OBJS)

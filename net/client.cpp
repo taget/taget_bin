@@ -23,7 +23,10 @@
 #include <fstream>
 #include <vector>
 #include <netdb.h>
-#include "strutil.cpp"
+#include "strutil.h"
+#include "protocol.h"
+#include "http.h"
+
 
 using namespace std;
 
@@ -307,7 +310,7 @@ int readfromserver(int fd, string path)
 		cout<< "Server refused" <<endl;
 		return 1;
 	}
-        if(get_val(rethead, "Content-Length", len) !=0)
+        if(strutil::get_val(rethead, "Content-Length", len) !=0)
                 return 2;	
 	int len2read = atoi(len.c_str());
 	FILE* fp = fopen (path.c_str(), "w");
@@ -338,11 +341,11 @@ const string wapperhead(const string path, const string servername, const int np
 	string strhead;
 	strhead = "GET " + path + " HTTP/1.1";
 	
-	add_val("Accept", "*/*", strhead);
-	add_val("Connection", "Keep-Alive", strhead);
-	add_val("Host", servername, strhead);
-	add_val("Pragma"," no-cache", strhead);
-	add_val("User-Agent", "GeneralDownloadApplication", strhead);
+	strutil::add_val("Accept", "*/*", strhead);
+	strutil::add_val("Connection", "Keep-Alive", strhead);
+	strutil::add_val("Host", servername, strhead);
+	strutil::add_val("Pragma"," no-cache", strhead);
+	strutil::add_val("User-Agent", "GeneralDownloadApplication", strhead);
 	strhead += "\r\n\r\n";
 	return strhead;
 }
@@ -359,6 +362,7 @@ static void* client_thread(void* server_info)
 		return NULL;
 	}	
 	int ret = 0;
+/*
 	string str_httphead = wapperhead(path, host, port);
 	DEBUG(str_httphead);
 	DEBUG(sock);
@@ -366,7 +370,7 @@ static void* client_thread(void* server_info)
 	getfilename(path, filename);
 	cout<< "reading ... and save download to "<< filename <<endl;
 	readfromserver(sock, filename);
-	
+*/	
     	close(sock);
 	return NULL;	
 }
@@ -387,22 +391,27 @@ int main(int argc,char **argv)
 		url = string(argv[1]);
 	}
 	DEBUG(url);
-	string host;
-	string path;
-	int port;
-	parsurl(url, host, path, port);
-	DEBUG(host);
-	DEBUG(path);
-	DEBUG(port);
+	/*
 	server_info.host = host;
 	server_info.path = path;
 	server_info.port = port;
 	server_info.num = 1;
+	*/
+//
+	protocol *p;
+	p = new http(url);
+	p->parse();
+	p->wapperhead();	
+	DEBUG(p->gethost());
+	DEBUG(p->getpath());
+	DEBUG(p->getport());
+	DEBUG(p->gethead());
+/*
 	for (int i=0; i<ithreadnum ;i++)
 	{
 		pid = pthread_create(&pt[i], NULL, client_thread ,&server_info);
 		
-		if(pid !=0 )
+		if(pid != 0)
 			return 0;
 		else 
 		{
@@ -414,6 +423,6 @@ int main(int argc,char **argv)
 	{
 		pthread_join(pt[i], NULL);
 	}
-	
+	*/
 	return 0;
 }

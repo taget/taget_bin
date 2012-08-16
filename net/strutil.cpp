@@ -1,7 +1,7 @@
 #include "strutil.h"
 
 // findstr("http://xyz//abc", "://", "//", str) will return xyz
-static int findstr(const string basestr, const string strstart, const string strend, string& str)
+int strutil::findstr(const string basestr, const string strstart, const string strend, string& str)
 {
 	size_t pos_start, pos_end;
 	int len_start = strstart.length();
@@ -26,7 +26,7 @@ static int findstr(const string basestr, const string strstart, const string str
 	
 }
 
-static int parsurl(const string url, string& host, string& path, int& port)
+int strutil::parsurl(const string url, string& host, string& path, int& port)
 {
 /* http://sp1.yokacdn.com/photos/0c/c3/673154/photo_117482_500.jpg */
 /* return sp1.yokacdn.com */
@@ -34,15 +34,17 @@ static int parsurl(const string url, string& host, string& path, int& port)
 	string tmp;
 	ret = findstr(url, "://", "/", host);
 	ret = findstr(url, host, "", path);
-	if(0 == findstr(host, "net:","", tmp))
+	if(0 == findstr(host, ":","", tmp))
 	{
 		host = host.substr(0, host.length() - tmp.length() - 1);
 		port = atoi(tmp.c_str());
 	}
 	else 
 	{
-		if(0 == findstr(url, "htt", "://", tmp))
+		if(0 == findstr(url, "http", "//", tmp))
 			port = 80;
+		else if(0 == findstr(url, "https", "//",tmp))
+			port = 81;
 		else if(0 == findstr(url, "ftp://", "/",tmp))
 			port = 21;
 	}
@@ -51,20 +53,20 @@ static int parsurl(const string url, string& host, string& path, int& port)
 		
 }
 
-static int getfilename(const string path, string& filename)
+int strutil::getfilename(const string path, string& filename)
 {
 // for /photos/0c/c3/673154/photo_117482_500.jpg return photo_117482_500.jpg 
 	filename = path.substr(path.find_last_of('/') + 1, path.length());
 	return 0;
 }
 
-static int add_val(const string name, const string val, string& ret)
+int strutil::add_val(const string name, const string val, string& ret)
 {
 	ret +=  "\r\n" + name + ": " + val;
 	return 0;
 }
 
-static int get_val(const string header,const string name, string& val)
+int strutil::get_val(const string header,const string name, string& val)
 {
 	size_t pos_start = header.find(name);
 	size_t pos_end;
