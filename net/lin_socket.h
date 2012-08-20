@@ -19,6 +19,7 @@
 
 #define SERVER 0
 #define CLIENT 1
+#define SOCK_MSG_LEN 4096
 class linsocket
 {
 	public:

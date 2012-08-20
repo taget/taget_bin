@@ -8,7 +8,6 @@
 protocol::protocol(string url)
 {
 	strurl = url;
-	//strversion = version;
 }
 protocol::~protocol()
 {
@@ -47,6 +46,10 @@ const string protocol::gethost()
 {
 	return strhost;
 }
+const string protocol::getfilename()
+{
+	return strfilename;
+}
 const int protocol::parsurl()
 {
 	return strutil::parsurl(strurl, strhost, strpath, iport);
@@ -57,4 +60,5 @@ const int protocol::init()
 	psocket = new linsocket(iport, strhost.c_str());
 	psocket->init();
 	wapperhead();
+	strutil::getfilename(strurl, strfilename);
 }
