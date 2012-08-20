@@ -26,6 +26,7 @@
 #include "strutil.h"
 #include "protocol.h"
 #include "http.h"
+#include "protocolfactory.h"
 
 
 using namespace std;
@@ -349,6 +350,7 @@ const string wapperhead(const string path, const string servername, const int np
 	strhead += "\r\n\r\n";
 	return strhead;
 }
+
 static void* client_thread(void* server_info) 
 {
 	string host = ((SERVER_INFO*)(server_info))->host;
@@ -362,15 +364,15 @@ static void* client_thread(void* server_info)
 		return NULL;
 	}	
 	int ret = 0;
-/*
+
 	string str_httphead = wapperhead(path, host, port);
 	DEBUG(str_httphead);
 	DEBUG(sock);
 	writetoserver(sock, str_httphead);
-	getfilename(path, filename);
+	strutil::getfilename(path, filename);
 	cout<< "reading ... and save download to "<< filename <<endl;
 	readfromserver(sock, filename);
-*/	
+	
     	close(sock);
 	return NULL;	
 }
@@ -391,23 +393,25 @@ int main(int argc,char **argv)
 		url = string(argv[1]);
 	}
 	DEBUG(url);
-	/*
+
+	string host, path;
+	int port;
+	strutil::parsurl(url, host, path, port);
 	server_info.host = host;
 	server_info.path = path;
 	server_info.port = port;
 	server_info.num = 1;
-	*/
+
 //
-	protocol *p;
-	p = new http(url);
-	p->parse();
-	p->wapperhead();	
+/*	protocol *p;
+	p = protocolfactory::getprotocol(url); 	
 	DEBUG(p->gethost());
 	DEBUG(p->getpath());
 	DEBUG(p->getport());
 	DEBUG(p->gethead());
-/*
-	for (int i=0; i<ithreadnum ;i++)
+	//DEBUG(p->readheadfromserver());
+*/
+	for (int i = 0; i < ithreadnum; i++)
 	{
 		pid = pthread_create(&pt[i], NULL, client_thread ,&server_info);
 		
@@ -423,6 +427,6 @@ int main(int argc,char **argv)
 	{
 		pthread_join(pt[i], NULL);
 	}
-	*/
+//	*/
 	return 0;
 }
