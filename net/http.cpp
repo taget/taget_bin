@@ -12,7 +12,7 @@ http::http(string url):protocol(url)
 
 const int http::wapperhead()
 {
-        strhead = "GET " + strhost + " HTTP/" + strversion;
+        strhead = "GET " + strpath + " HTTP/" + strversion;
         strutil::add_val("Accept", "*/*", strhead);
         strutil::add_val("Connection", "Keep-Alive", strhead);
         strutil::add_val("Host", strhost, strhead);
@@ -21,10 +21,11 @@ const int http::wapperhead()
         strhead += "\r\n\r\n";
 	return 0;
 }
-const int http::readhead()
+const int http::writeheadtoserver()
 {
-	strhead = "head";
+	return psocket->writeSpecifiedData(strhead.c_str(), strhead.length());
 }
+
 const string http::readheadfromserver()
 {
 	u_char buffer = 0;
@@ -34,7 +35,6 @@ const string http::readheadfromserver()
 	while((ret = psocket->readSpecifiedData(&buffer, 1)) != 0)
 	{
 		strrethead += buffer;
-		DEBUG(strrethead);
 		switch(ifind)
 		{
 			case 0:

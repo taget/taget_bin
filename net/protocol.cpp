@@ -10,7 +10,10 @@ protocol::protocol(string url)
 	strurl = url;
 	//strversion = version;
 }
-
+protocol::~protocol()
+{
+	delete psocket;
+}
 const string protocol::gethead()
 {
 	return strhead;

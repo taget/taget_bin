@@ -104,23 +104,27 @@ int linsocket::SocketClient(const char* ch_server, const int nPort)
 
 int linsocket::readSpecifiedData(unsigned char lpszLineBuffer[], const int iNum)
 {
-	int iBytes=0, iTotalBytes=0;
-	assert(lpszLineBuffer != NULL);	
-	while(iTotalBytes < iNum)
-	{
-		iBytes = read(_ifd, lpszLineBuffer + iTotalBytes, iNum - iTotalBytes);
-		if(iBytes < 0)
-		{
-			if((errno == EAGAIN) || (errno == EINTR))
-				continue;
-			return -1;
-		}
-		else if(iBytes > 0)
-			iTotalBytes += iBytes;
-		else
-			break;
-	}
-	return iTotalBytes;
+        int iBytes=0, iTotalBytes=0;
+
+        if (_ifd < 0)
+                return -1;
+        assert(lpszLineBuffer != NULL);
+        while(iTotalBytes < iNum)
+        {
+                iBytes = read(_ifd, lpszLineBuffer+iTotalBytes, iNum-iTotalBytes);
+                if(iBytes < 0)
+                {
+                        if((errno == EAGAIN) || (errno == EINTR))
+                                continue;
+                        return -1;
+                }
+                else if(iBytes > 0)
+                        iTotalBytes += iBytes;
+                else
+                        break;
+        }
+        return iTotalBytes;
+
 }
 
 int linsocket::writeSpecifiedData(unsigned char lpszLineBuffer[], const int iNum)

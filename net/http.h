@@ -14,7 +14,7 @@ class http:public protocol
 	http(){}
 	http(string url);
 	virtual const int wapperhead();
-	virtual const int readhead();
-	const string readheadfromserver();
+        virtual const int writeheadtoserver();
+	virtual const string readheadfromserver();
 };
 #endif

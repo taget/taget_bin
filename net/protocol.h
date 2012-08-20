@@ -13,10 +13,12 @@ class protocol
 	public:
 	protocol(){}
 	protocol(string url);
+	virtual ~protocol();
 	virtual const int init();
 	virtual	const int parsurl();
 	virtual const int wapperhead() = 0;
 	virtual const string readheadfromserver() = 0;
+	virtual const int writeheadtoserver() = 0;
 
 	const string gethead();
 	const string geturl();
