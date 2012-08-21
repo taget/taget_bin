@@ -6,8 +6,8 @@ class linexception
 {
 	public:
 	linexception(){}
-	linexception(char* errmsg){strerrmsg = string(errmsg);}
-	linexception(string errmsg){strerrmsg = errmsg;}
+	linexception(const char* errmsg){strerrmsg = string(errmsg);}
+	//linexception(string errmsg){strerrmsg = errmsg;}
 	
 	public:
 	

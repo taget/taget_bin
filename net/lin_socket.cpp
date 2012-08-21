@@ -1,7 +1,7 @@
 #include "lin_socket.h"
 
 
-linsocket::linsocket(const int nPort, const char* ch_server = NULL)
+linsocket::linsocket(const int nPort, const char* ch_server)
 {
 	_ch_server = ch_server;
 	_nPort = nPort;

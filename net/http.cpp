@@ -30,7 +30,7 @@ const int http::wapperhead(const int start_range)
 }
 const int http::writeheadtoserver()
 {
-	return psocket->writeSpecifiedData(strhead.c_str(), strhead.length());
+	return psocket->writeSpecifiedData((unsigned char*)strhead.c_str(), strhead.length());
 }
 
 const string http::readheadfromserver()
@@ -77,7 +77,7 @@ const string http::readheadfromserver()
 	}
 	return strrethead;
 }
-const int http::download(const string pathtosave, const int inum)
+const int http::download(const string pathtosave, const int ithreadnum)
 {
 	string local_path_to_save = pathtosave + "/" + strfilename;
 	string len;
@@ -85,20 +85,22 @@ const int http::download(const string pathtosave, const int inum)
 	int len2read;
 	u_char buffer[SOCK_MSG_LEN];
 
-	if(inum < 2)
+	try
 	{
         	DEBUG(writeheadtoserver());
         	DEBUG(readheadfromserver()); 
-		try 
-		{
-			int ret = parsresult();
-		}
-		catch(linexception& e)
-		{
-			throw e;
-		}
-		len2read = this->ilength;
-        	FILE* fp = fopen (local_path_to_save.c_str(), "w");
+		ret = parsresult();
+	}
+	catch(linexception& e)
+	{
+		throw e;
+	}
+
+	len2read = this->ilength;
+
+	if (ithreadnum < 2) // sigle thread
+	{
+		FILE* fp = fopen (local_path_to_save.c_str(), "w");
         	while((ret = psocket->readSpecifiedData(buffer, len2read > SOCK_MSG_LEN ?\
             	 SOCK_MSG_LEN : len2read)) > 0  && len2read > 0)
        		{
@@ -108,26 +110,28 @@ const int http::download(const string pathtosave, const int inum)
         	        fwrite(buffer,ret,1,fp);
        		}
 	        if (len2read != 0)
-                	throw linexception("Read erro! len2read is not match !");
+                	throw linexception("Read error! len2read is not match !");
        		fclose(fp);
-	}//end if inum < 2
+	}//end if itheadnum < 2
 	else //
 	{
-		
+		int i2read = len2read / ithreadnum;
+		linsocket *tmpsocket = new linsocket(this->getport(), (this->gethost()).c_str());
+		delete tmpsocket;
 	}	
 	return 0;
 }
 int http::parsresult()
 {
 	string len;
+	int ret = -1;
         if(strrethead.find("200 OK") != string::npos)
         {
 		if(strutil::get_val(strrethead, "Content-Length", len) != 0)
 		{
 			throw linexception("200 OK, but Content-Length not found");
 		}
-		ilength = atoi(len.c_str());
-                return HTTP_OK;
+                ret = HTTP_OK;
         }
 	else if (strrethead.find("206 Partial Content") != string::npos)
 	{
@@ -135,12 +139,12 @@ int http::parsresult()
                 {
                         throw linexception("206 Content-Length not found");
 		}
-		ilength = atoi(len.c_str());
-		return HTTP_PART;
+		ret = HTTP_PART;
 	}
 	else
 	{
 		throw linexception("Http ERROR");
 	}
-	return -1;
+	ilength = atoi(len.c_str());
+	return ret;
 }

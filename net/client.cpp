@@ -60,6 +60,7 @@ typedef struct _SERVER_INFO
 	string				path;	
 	int   			        port;
 	int 				num;
+	FILE**				filehandle;
 }SERVER_INFO;
 
 static void* client_thread(void* server_info);
@@ -356,6 +357,16 @@ static void* client_thread(void* server_info)
 	string host = ((SERVER_INFO*)(server_info))->host;
 	string path = ((SERVER_INFO*)(server_info))->path;
 	int port = ((SERVER_INFO*)(server_info))->port;
+	FILE* fp = *(((SERVER_INFO*)(server_info))->filehandle);
+	int offset = ((SERVER_INFO*)(server_info))->num;
+
+	if(fp != NULL)
+	{
+		char buffer[1024] = "process ing....abc";
+		fseek(fp, offset ,SEEK_SET);
+		fwrite(buffer,1024,1,fp);
+	}
+	/*
 	string filename;
 	int sock = SocketCLient(host.c_str(), port);
 	if(sock < 0)
@@ -374,6 +385,7 @@ static void* client_thread(void* server_info)
 	readfromserver(sock, filename);
 	
     	close(sock);
+	*/
 	return NULL;	
 }
 
@@ -384,8 +396,8 @@ int main(int argc,char **argv)
 	
         pthread_t pid;
 	pthread_t pt[16];	
-        int ithreadnum = 1;
-	SERVER_INFO server_info;
+        int ithreadnum = 2;
+	SERVER_INFO server_info[2];
 	string url = string("http://sp1.yokacdn.com/photos/0c/c3/673154/photo_117482_500.jpg");
 	DEBUG(argc);
 	if(argc == 2)
@@ -394,13 +406,22 @@ int main(int argc,char **argv)
 	}
 	DEBUG(url);
 
+	FILE* fp = fopen("1.txt", "w");
 	string host, path;
 	int port;
 	strutil::parsurl(url, host, path, port);
-	server_info.host = host;
-	server_info.path = path;
-	server_info.port = port;
-	server_info.num = 1;
+	server_info[0].host = host;
+	server_info[0].path = path;
+	server_info[0].port = port;
+	server_info[0].num = 0;
+	server_info[0].filehandle = &fp;
+
+        SERVER_INFO server_info1;
+        server_info[1].host = host;
+        server_info[1].path = path;
+        server_info[1].port = port;
+        server_info[1].num = 500;
+        server_info[1].filehandle = &fp;
 
 //
 /*	protocol *p;
@@ -411,9 +432,10 @@ int main(int argc,char **argv)
 	DEBUG(p->gethead());
 	//DEBUG(p->readheadfromserver());
 */
+
 	for (int i = 0; i < ithreadnum; i++)
 	{
-		pid = pthread_create(&pt[i], NULL, client_thread ,&server_info);
+		pid = pthread_create(&pt[i], NULL, client_thread ,&(server_info[i]));
 		
 		if(pid != 0)
 			return 0;
@@ -428,5 +450,6 @@ int main(int argc,char **argv)
 		pthread_join(pt[i], NULL);
 	}
 //	*/
+	close(fp);
 	return 0;
 }

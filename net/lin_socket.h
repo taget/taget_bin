@@ -25,6 +25,7 @@ class linsocket
 	public:
 	linsocket(){};
 	linsocket(const int nPort, const char* ch_server = NULL);
+	~linsocket(){close(_ifd);}
 	int setNonblockMode();
 	int SocketServer(const short nPort);
 	int SocketClient(const char* ch_server, const int nPort);
@@ -37,7 +38,7 @@ class linsocket
 	int _ifd;
 	int _type;
 	int _nPort;
-	char* _ch_server;
+	const char* _ch_server;
 };
 
 #endif

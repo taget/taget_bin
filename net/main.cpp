@@ -10,6 +10,7 @@
 #include "protocolfactory.h"
 #include "protocol.h"
 #include "http.h"
+#include "lin_download.h"
 
 using namespace std;
 
