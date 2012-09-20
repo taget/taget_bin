@@ -16,7 +16,7 @@ class protocol
 	virtual ~protocol();
 	virtual const int init();
 	virtual	const int parsurl();
-	virtual const int wapperhead(const int start_range = 0) = 0;
+	virtual const string wapperhead(const int start_range = 0) = 0;
 	virtual const string readheadfromserver() = 0;
 	virtual const int writeheadtoserver() = 0;
 	// download(pathtosave , thread number)
