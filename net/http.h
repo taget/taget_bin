@@ -31,12 +31,11 @@ class http:public protocol
 	public:
 	http(){}
 	http(string url);
-	virtual const string wapperhead(const int start_range = 0);
+	virtual const string wapperhead();
         virtual const int writeheadtoserver();
 	virtual const string readheadfromserver();
-        virtual const int download(const string pathtosave, const int inum = 1);
-	
-	int parsresult();
+	virtual const int readfromserver(u_char* buffer, const int num);
+	virtual const int parsresult();
 	int setpsocket(linsocket* p);
 
 };

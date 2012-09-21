@@ -30,28 +30,25 @@ int main(int argc, char* argv[])
 
         string url = string("http://sp1.yokacdn.com/photos/0c/c3/673154/photo_117482_500.jpg");
 	int ithreadnum = 1;
-        if(argc == 2)
+        if(argc >= 2)
         {
                 url = string(argv[1]);
         }
-	if(argc == 3)
+	if(argc >= 3)
 	{
 		ithreadnum = atoi(argv[2]);
 	}
         DEBUG(url);
-	protocol *p;
+	lindownload* pd = new lindownload(url, ithreadnum);
 	try 
 	{
-		string downloadpath = "./";
-		p = protocolfactory::getprotocol(url);
-	
-		DEBUG(p->download(downloadpath, ithreadnum));
-		cout << "File download to [" << downloadpath <<"/"<< p->getfilename() << "]" <<endl;
-	delete p;
+		pd->init();
+		pd->download("./");
 	}
 	catch(linexception& e)
 	{
 		cout << e.strerrmsg<<endl;
 	}
+	delete pd;
 	return 0;
 }

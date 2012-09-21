@@ -16,11 +16,12 @@ class protocol
 	virtual ~protocol();
 	virtual const int init();
 	virtual	const int parsurl();
-	virtual const string wapperhead(const int start_range = 0) = 0;
+	virtual const string wapperhead() = 0;
 	virtual const string readheadfromserver() = 0;
 	virtual const int writeheadtoserver() = 0;
 	// download(pathtosave , thread number)
-	virtual const int download(const string pathtosave, const int inum = 1) = 0;
+	virtual const int readfromserver(u_char* buffer, const int num) = 0;
+	virtual const int parsresult() = 0;
 
 	const string gethead();
 	const string geturl();
@@ -32,7 +33,11 @@ class protocol
 
 	const int getlength();
 	const int getport();
+	const int getlen2read();
+	const int getstart();
 
+	const int setlen2read(const int len2read);
+	const int setstart(const int istart);
 	public:
 
 	string strhead;		//head
@@ -46,6 +51,8 @@ class protocol
 	int ilength;		//file length 
 	int iport;		//port
 	
+	int ilen2read;		//length to read num
+	int istart;		//start pos
 	public:
 	
 	linsocket * psocket;	
