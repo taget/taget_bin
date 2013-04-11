@@ -7,6 +7,11 @@ protocol* protocolfactory::getprotocol(string strurl)
 	string path;
 	int port;
 	strutil::parsurl(strurl, host, path, port);
+	DEBUG(strurl);
+	DEBUG(host);
+	DEBUG(path);
+	
+	DEBUG(port);
 	switch (port)
 	{
 		case 80:
@@ -15,10 +20,12 @@ protocol* protocolfactory::getprotocol(string strurl)
 		case 81:
 			pp = new http(strurl);
 			break;
-		case 21:
-			pp = NULL;
 		default:
-			pp = NULL;
+		//case 21:
+			pp = new ftp(strurl);
+		//	throw linexception("FTP protocol");
+		//default:
+		//	throw linexception("Unknow protocol");
 	}
 	if(pp != NULL)
 	{

@@ -3,7 +3,7 @@ GCC=g++
 ARGS=-g -Wno-deprecated -fpermissive
 LIB=-lpthread
 
-OBJS=strutil.o lin_socket.o lin_thread.o lin_download.o protocolfactory.o protocol.o http.o 
+OBJS=strutil.o lin_socket.o lin_thread.o lin_download.o protocolfactory.o protocol.o http.o ftp.o  
 MAIN=main.o
 TEST=client.o  
 SRC=.

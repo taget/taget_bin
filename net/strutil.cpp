@@ -1,5 +1,5 @@
 #include "strutil.h"
-
+#include "util.h"
 // findstr("http://xyz//abc", "://", "//", str) will return xyz
 int strutil::findstr(const string basestr, const string strstart, const string strend, string& str)
 {
@@ -33,8 +33,16 @@ int strutil::parsurl(const string url, string& host, string& path, int& port)
 	int ret;
 	string tmp;
 	ret = findstr(url, "://", "/", host);
+	DEBUG(host);
 	ret = findstr(url, host, "", path);
-	if(0 == findstr(host, ":","", tmp))
+	if(0 == findstr(host, "@", "", tmp)) // name:passwd@serverhost:port
+	{
+		string tmpport;
+		findstr(tmp, ":", "", tmpport);
+		host = tmp.substr(0, tmp.length() - tmpport.length() -1);
+		port = atoi(tmpport.c_str());
+	}
+	else if(0 == findstr(host, ":", "", tmp))
 	{
 		host = host.substr(0, host.length() - tmp.length() - 1);
 		port = atoi(tmp.c_str());
@@ -45,7 +53,7 @@ int strutil::parsurl(const string url, string& host, string& path, int& port)
 			port = 80;
 		else if(0 == findstr(url, "https", "//",tmp))
 			port = 81;
-		else if(0 == findstr(url, "ftp://", "/",tmp))
+		else if(0 == findstr(url, "ftp", "//",tmp))
 			port = 21;
 	}
 	

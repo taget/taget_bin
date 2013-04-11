@@ -55,9 +55,10 @@ int lindownload::download(const string pathtosave)
 {
 	DEBUG(pathtosave);
 	int len2read;
-	protocol* pp = protocolfactory::getprotocol(_strurl);
+	protocol* pp;
         try
         {
+		pp = protocolfactory::getprotocol(_strurl);
         	DEBUG(pp->writeheadtoserver());
         	DEBUG(pp->readheadfromserver()); 
 		pp->parsresult();
@@ -114,12 +115,15 @@ int lindownload::download(const string pathtosave)
 		fclose(fp);
 		cout << "File download to [" << pathtosave <<"/"<< pp->getfilename() << "]" <<endl;
 
+		if(NULL != pp)
+        	{
+                	delete pp;
+               		pp = NULL;
+        	}
 	}
         catch(linexception& e)
         {
                 cout << e.strerrmsg<<endl;
         }
-	delete pp;
-	pp = NULL;
 	return 0;	
 }

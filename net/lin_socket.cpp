@@ -1,5 +1,5 @@
 #include "lin_socket.h"
-
+#include "lin_exception.h"
 
 linsocket::linsocket(const int nPort, const char* ch_server)
 {
@@ -10,15 +10,19 @@ linsocket::linsocket(const int nPort, const char* ch_server)
 }
 int linsocket::init()
 {
+	DEBUG("linsocket init");
+	DEBUG(_ch_server);
 	if(_ch_server == NULL)
 	{
 		_type = SERVER;
-		return SocketServer(_nPort);
+		SocketServer(_nPort);
+		throw linexception("init server failed");
 	}
 	else
 	{
 		_type = CLIENT;
-		return SocketClient(_ch_server ,_nPort);
+		SocketClient(_ch_server ,_nPort);
+		throw linexception("init client failed");
 	}
 	return 0;
 }     
@@ -84,6 +88,7 @@ int linsocket::SocketClient(const char* ch_server, const int nPort)
         }
 	
 	phent = gethostbyname(ch_server);
+	DEBUG(phent);
 	if(phent == NULL)
 		return -1; 
 	  

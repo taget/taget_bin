@@ -4,6 +4,7 @@
 //
 */
 #include "protocol.h"
+#include "lin_exception.h"
 
 protocol::protocol(string url)
 {
@@ -74,8 +75,11 @@ const int protocol::parsurl()
 const int protocol::init()
 {
 	parsurl();
+	DEBUG(strhost);
 	psocket = new linsocket(iport, strhost.c_str());
-	psocket->init();
+	DEBUG(psocket->init());
 	wapperhead();
 	strutil::getfilename(strurl, strfilename);
+	DEBUG("protocol init OK");
+	return 0;	
 }
